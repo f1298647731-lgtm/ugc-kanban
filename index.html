@@ -278,6 +278,7 @@
             color: #4a90d9;
             text-decoration: none;
             font-size: 13px;
+            word-break: break-all;
         }
         .dist-platform-link a:hover { text-decoration: underline; }
         .dist-platform-views {
@@ -922,6 +923,38 @@
         }
 
         // === 分发记录相关 ===
+        function getLinkHref(link) {
+            const trimmed = (link || '').trim();
+            if (!trimmed) return '';
+            if (/^https?:\/\//i.test(trimmed)) return trimmed;
+            return `https://${trimmed}`;
+        }
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function renderPlatformData(platform, data = {}, className) {
+            const views = (data.views || '').trim();
+            const link = (data.link || '').trim();
+            const href = getLinkHref(link);
+
+            if (!views && !link) return '';
+
+            return `
+                <div class="dist-platform">
+                    <span class="${className}">${platform}</span>
+                    ${href ? `<span class="dist-platform-link"><a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(link)}</a></span>` : ''}
+                    ${views ? `<span class="dist-platform-views ${className}">${escapeHtml(views)}</span>` : ''}
+                </div>
+            `;
+        }
+
         function renderDistRecords() {
             const container = document.getElementById('distRecordsList');
             const noRecords = document.getElementById('noDistRecords');
@@ -943,10 +976,10 @@
                             <span class="dist-date">${d.date}</span>
                         </div>
                         <div class="dist-platforms">
-                            ${d.tt.views ? `<div class="dist-platform"><span class="platform-tt">TT</span><span class="dist-platform-link"><a href="${d.tt.link || '#'}" target="_blank">📱</a></span><span class="dist-platform-views platform-tt">${d.tt.views}</span></div>` : ''}
-                            ${d.ig.views ? `<div class="dist-platform"><span class="platform-ig">IG</span><span class="dist-platform-link"><a href="${d.ig.link || '#'}" target="_blank">📸</a></span><span class="dist-platform-views platform-ig">${d.ig.views}</span></div>` : ''}
-                            ${d.yt.views ? `<div class="dist-platform"><span class="platform-yt">YT</span><span class="dist-platform-link"><a href="${d.yt.link || '#'}" target="_blank">🎬</a></span><span class="dist-platform-views platform-yt">${d.yt.views}</span></div>` : ''}
-                            ${d.fb.views ? `<div class="dist-platform"><span class="platform-fb">FB</span><span class="dist-platform-link"><a href="${d.fb.link || '#'}" target="_blank">📘</a></span><span class="dist-platform-views platform-fb">${d.fb.views}</span></div>` : ''}
+                            ${renderPlatformData('TT', d.tt, 'platform-tt')}
+                            ${renderPlatformData('IG', d.ig, 'platform-ig')}
+                            ${renderPlatformData('YT', d.yt, 'platform-yt')}
+                            ${renderPlatformData('FB', d.fb, 'platform-fb')}
                         </div>
                     </div>
                 </div>
