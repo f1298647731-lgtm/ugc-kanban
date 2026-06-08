@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>UGC脚本看板</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 0;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1, h2, h3 { color: #333; }
+        h1 { margin-bottom: 10px; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        th {
+            background: #4a90d9;
+            color: white;
+            font-weight: 600;
+        }
+        tr:hover { background: #f8f9fa; }
+
+        .tag {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .tag-green { background: #d4edda; color: #155724; }
+        .tag-blue { background: #cce5ff; color: #004085; }
+
+        .nav {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .nav a {
+            margin-right: 20px;
+            text-decoration: none;
+            color: #4a90d9;
+            font-weight: 500;
+        }
+        .nav a:hover { text-decoration: underline; }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            flex: 1;
+            text-align: center;
+        }
+        .stat-num {
+            font-size: 32px;
+            font-weight: bold;
+            color: #4a90d9;
+        }
+        .stat-label { color: #666; margin-top: 5px; }
+
+        .form-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .form-section input, .form-section select, .form-section textarea {
+            padding: 8px 12px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .form-section button, .btn {
+            padding: 6px 12px;
+            background: #4a90d9;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .form-section button:hover, .btn:hover { background: #357abd; }
+        .form-section button.danger, .btn.danger {
+            background: #dc3545;
+        }
+        .form-section button.danger:hover, .btn.danger:hover {
+            background: #c82333;
+        }
+        .form-section button.secondary, .btn.secondary {
+            background: #6c757d;
+        }
+        .form-section button.secondary:hover, .btn.secondary:hover {
+            background: #5a6268;
+        }
+        .form-section button.small, .btn.small {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+
+        .platform-tt { color: #ff4757; }
+        .platform-ig { color: #e1306c; }
+        .platform-yt { color: #ff0000; }
+        .platform-fb { color: #1877f2; }
+
+        .script-card {
+            background: white;
+            border-radius: 8px;
+            padding: 12px 20px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .script-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .script-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        .script-info {
+            flex: 1;
+            cursor: pointer;
+        }
+        .script-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+        }
+        .script-summary {
+            color: #666;
+            font-size: 13px;
+            margin-top: 2px;
+        }
+        .status-select {
+            padding: 4px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .status-select.status-making {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }
+        .status-select.status-done {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+
+        .script-detail {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: none;
+        }
+        .script-detail.active {
+            display: block;
+        }
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .back-btn {
+            background: none;
+            border: none;
+            color: #4a90d9;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 5px 10px;
+        }
+        .back-btn:hover {
+            text-decoration: underline;
+        }
+
+        .distribution-form {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .distribution-form h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .form-row input {
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .form-row label {
+            display: block;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 2px;
+        }
+        .form-row.wide input { width: 200px; }
+        .form-row.narrow input { width: 100px; }
+
+        .dist-record {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #4a90d9;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .dist-checkbox {
+            width: 18px;
+            height: 18px;
+            margin-top: 2px;
+            cursor: pointer;
+        }
+        .dist-content {
+            flex: 1;
+        }
+        .dist-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .dist-creator { font-weight: bold; color: #333; }
+        .dist-date { color: #999; font-size: 13px; }
+        .dist-platforms {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .dist-platform {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .dist-platform-link a {
+            color: #4a90d9;
+            text-decoration: none;
+            font-size: 13px;
+        }
+        .dist-platform-link a:hover { text-decoration: underline; }
+        .dist-platform-views {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .dist-actions {
+            display: none;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        .dist-actions.visible {
+            display: flex;
+        }
+
+        .ost-section {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        .ost-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .ost-title {
+            font-weight: 600;
+            color: #4a90d9;
+        }
+        .ost-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .ost-item {
+            background: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 6px;
+            border-left: 3px solid #4a90d9;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .ost-checkbox {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        .ost-text {
+            flex: 1;
+        }
+        .ost-actions {
+            display: none;
+            gap: 5px;
+        }
+        .ost-actions.visible {
+            display: flex;
+        }
+        .ost-edit-input {
+            flex: 1;
+            padding: 4px 8px;
+            border: 1px solid #4a90d9;
+            border-radius: 3px;
+            font-size: 14px;
+        }
+
+        .ost-input-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .ost-input-group input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .action-bar {
+            background: #e9ecef;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+        }
+        .action-bar.visible { display: flex; }
+        .action-bar span { font-size: 13px; color: #666; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📋 UGC脚本看板</h1>
+
+        <div class="nav">
+            <a href="#" onclick="showListView()">📋 脚本列表</a>
+            <a href="#" onclick="showListView()">📈 分发数据</a>
+            <a href="#达人库">👥 达人库</a>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-num" id="scriptCount">3</div>
+                <div class="stat-label">脚本总数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num">5</div>
+                <div class="stat-label">达人总数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" id="distCount">4</div>
+                <div class="stat-label">分发次数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num">125.4K</div>
+                <div class="stat-label">总 Views</div>
+            </div>
+        </div>
+
+        <div class="form-section" id="importSection">
+            <h2>➕ 导入新脚本</h2>
+            <form id="importScriptForm">
+                <input type="text" id="scriptName" placeholder="脚本主题 *" required style="width: 250px;">
+                <input type="text" id="scriptSummary" placeholder="脚本内容摘要" style="width: 300px;">
+                <select id="scriptStatus" style="width: 120px;">
+                    <option value="制作中" selected>制作中</option>
+                    <option value="已完成">已完成</option>
+                </select>
+                <button type="submit">导入脚本</button>
+            </form>
+        </div>
+
+        <div class="form-section" id="actionBar" style="display: none; padding: 10px 20px;">
+            <span id="selectedCount">已选择 0 个脚本</span>
+            <button class="danger" onclick="deleteSelected()">删除选中</button>
+            <button class="secondary" onclick="deselectAll()">取消选择</button>
+        </div>
+
+        <div id="scriptsList">
+            <h2>📝 脚本库</h2>
+        </div>
+
+        <div id="scriptDetail" class="script-detail">
+            <div class="detail-header">
+                <div>
+                    <h2 id="detailTitle">脚本详情</h2>
+                    <p id="detailSummary" style="color: #666;"></p>
+                    <select id="detailStatus" onchange="changeDetailStatus(this.value)" style="margin-top: 5px; padding: 4px 8px;">
+                        <option value="制作中">制作中</option>
+                        <option value="已完成">已完成</option>
+                    </select>
+                </div>
+                <button class="back-btn" onclick="showListView()">← 返回列表</button>
+            </div>
+
+            <div class="distribution-form">
+                <h3>📤 添加分发数据</h3>
+                <form id="addDistForm">
+                    <div class="form-row">
+                        <div>
+                            <label>Creator Name *</label>
+                            <input type="text" id="creatorName" placeholder="@达人" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="narrow">
+                            <label>TT Link</label>
+                            <input type="text" id="ttLink" placeholder="https://...">
+                        </div>
+                        <div class="narrow">
+                            <label>TT Views</label>
+                            <input type="text" id="ttViews" placeholder="0">
+                        </div>
+                        <div class="narrow">
+                            <label>IG Link</label>
+                            <input type="text" id="igLink" placeholder="https://...">
+                        </div>
+                        <div class="narrow">
+                            <label>IG Views</label>
+                            <input type="text" id="igViews" placeholder="0">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="narrow">
+                            <label>YT Link</label>
+                            <input type="text" id="ytLink" placeholder="https://...">
+                        </div>
+                        <div class="narrow">
+                            <label>YT Views</label>
+                            <input type="text" id="ytViews" placeholder="0">
+                        </div>
+                        <div class="narrow">
+                            <label>FB Link</label>
+                            <input type="text" id="fbLink" placeholder="https://...">
+                        </div>
+                        <div class="narrow">
+                            <label>FB Views</label>
+                            <input type="text" id="fbViews" placeholder="0">
+                        </div>
+                    </div>
+                    <button type="submit">添加分发记录</button>
+                </form>
+            </div>
+
+            <h3>📊 分发记录</h3>
+            <div class="action-bar" id="distActionBar">
+                <span id="distSelectedCount">已选择 0 条</span>
+                <button class="danger small" onclick="deleteSelectedDist()">删除选中</button>
+                <button class="secondary small" onclick="deselectAllDist()">取消选择</button>
+            </div>
+            <div id="distRecordsList"></div>
+            <div id="noDistRecords" class="empty-state">暂无分发记录</div>
+
+            <div class="ost-section">
+                <div class="ost-header">
+                    <div class="ost-title">📝 On-Screen Text（屏幕字幕）</div>
+                    <div class="action-bar" id="ostActionBar">
+                        <span id="ostSelectedCount">已选择 0 条</span>
+                        <button class="danger small" onclick="deleteSelectedOST()">删除选中</button>
+                        <button class="secondary small" onclick="deselectAllOST()">取消选择</button>
+                    </div>
+                </div>
+                <ul class="ost-list" id="ostList"></ul>
+                <div class="ost-input-group">
+                    <input type="text" id="ostInput" placeholder="添加新的 on-screen text...">
+                    <button onclick="addOST()">添加</button>
+                </div>
+            </div>
+        </div>
+
+        <h2 id="达人库">👥 达人库</h2>
+        <p style="color: #666; font-size: 13px; margin-bottom: 15px;">* 数据来源于所有分发记录，按 Creator Name 自动统计</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>达人昵称</th>
+                    <th>收录平台</th>
+                    <th>TT 均播</th>
+                    <th>IG 均播</th>
+                    <th>YT 均播</th>
+                    <th>FB 均播</th>
+                    <th>最高播放</th>
+                    <th>备注</th>
+                </tr>
+            </thead>
+            <tbody id="influencerTable">
+            </tbody>
+        </table>
+
+        <p style="color: #999; text-align: center; margin-top: 40px;">
+            最后更新: 2026-06-08 | 📁 /Users/chenyahui/UGC看板/
+        </p>
+    </div>
+
+    <script>
+        // 达人备注存储
+        let influencerNotes = {};
+
+        // 获取达人统计数据
+        function getInfluencerStats() {
+            const stats = {};
+
+            scripts.forEach(script => {
+                script.dist.forEach(dist => {
+                    const creator = dist.creator;
+                    if (!stats[creator]) {
+                        stats[creator] = {
+                            name: creator,
+                            platforms: new Set(),
+                            ttViews: [],
+                            igViews: [],
+                            ytViews: [],
+                            fbViews: [],
+                            allViews: []
+                        };
+                    }
+
+                    if (dist.tt.views) {
+                        stats[creator].platforms.add('TT');
+                        stats[creator].ttViews.push(parseViews(dist.tt.views));
+                        stats[creator].allViews.push(parseViews(dist.tt.views));
+                    }
+                    if (dist.ig.views) {
+                        stats[creator].platforms.add('IG');
+                        stats[creator].igViews.push(parseViews(dist.ig.views));
+                        stats[creator].allViews.push(parseViews(dist.ig.views));
+                    }
+                    if (dist.yt.views) {
+                        stats[creator].platforms.add('YT');
+                        stats[creator].ytViews.push(parseViews(dist.yt.views));
+                        stats[creator].allViews.push(parseViews(dist.yt.views));
+                    }
+                    if (dist.fb.views) {
+                        stats[creator].platforms.add('FB');
+                        stats[creator].fbViews.push(parseViews(dist.fb.views));
+                        stats[creator].allViews.push(parseViews(dist.fb.views));
+                    }
+                });
+            });
+
+            return Object.values(stats);
+        }
+
+        function parseViews(str) {
+            if (!str) return 0;
+            if (str.includes('K')) return parseFloat(str) * 1000;
+            if (str.includes('M')) return parseFloat(str) * 1000000;
+            return parseFloat(str) || 0;
+        }
+
+        function formatViews(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toString();
+        }
+
+        function getAverage(arr) {
+            if (arr.length === 0) return 0;
+            return arr.reduce((a, b) => a + b, 0) / arr.length;
+        }
+
+        function getMax(arr) {
+            if (arr.length === 0) return 0;
+            return Math.max(...arr);
+        }
+
+        function renderInfluencerTable() {
+            const stats = getInfluencerStats();
+            const container = document.getElementById('influencerTable');
+
+            if (stats.length === 0) {
+                container.innerHTML = '<tr><td colspan="9" class="empty-state">暂无达人数据</td></tr>';
+                return;
+            }
+
+            container.innerHTML = stats.map((inf, i) => `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td><strong>${inf.name}</strong></td>
+                    <td>${Array.from(inf.platforms).join(', ')}</td>
+                    <td class="platform-tt">${inf.ttViews.length ? formatViews(getAverage(inf.ttViews)) : '-'}</td>
+                    <td class="platform-ig">${inf.igViews.length ? formatViews(getAverage(inf.igViews)) : '-'}</td>
+                    <td class="platform-yt">${inf.ytViews.length ? formatViews(getAverage(inf.ytViews)) : '-'}</td>
+                    <td class="platform-fb">${inf.fbViews.length ? formatViews(getAverage(inf.fbViews)) : '-'}</td>
+                    <td><strong>${formatViews(getMax(inf.allViews))}</strong></td>
+                    <td>
+                        <input type="text"
+                            class="note-input"
+                            placeholder="添加备注..."
+                            value="${influencerNotes[inf.name] || ''}"
+                            onchange="saveInfluencerNote('${inf.name}', this.value)"
+                            style="width: 120px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function saveInfluencerNote(name, note) {
+            influencerNotes[name] = note;
+        }
+
+        let scripts = [
+            { name: '漱口水测评', summary: '薄荷味漱口水使用体验，推荐语气', status: '制作中', ost: ['"这个漱口水也太清凉了吧！"', '"用完口气清新一整天"'], dist: [
+                { creator: '@小美', tt: {link: '', views: '12K'}, ig: {link: '', views: '8.5K'}, yt: {link: '', views: ''}, fb: {link: '', views: '3.2K'}, date: '06-08' },
+                { creator: '@Lisa', tt: {link: '', views: '8K'}, ig: {link: '', views: '6K'}, yt: {link: '', views: '10K'}, fb: {link: '', views: ''}, date: '06-07' }
+            ]},
+            { name: '厨房神器推荐', summary: '切菜神器使用演示，便利性强调', status: '制作中', ost: ['"切菜效率提升10倍"'], dist: [
+                { creator: '@阿强', tt: {link: '', views: '25K'}, ig: {link: '', views: ''}, yt: {link: '', views: '15K'}, fb: {link: '', views: '8K'}, date: '06-07' }
+            ]},
+            { name: '手机壳开箱', summary: '透明手机壳开箱，质感展示', status: '已完成', ost: ['"终于等到你"'], dist: [
+                { creator: '@小红', tt: {link: '', views: '18K'}, ig: {link: '', views: '10K'}, yt: {link: '', views: ''}, fb: {link: '', views: ''}, date: '06-06' }
+            ]}
+        ];
+
+        let currentScript = null;
+
+        // === 脚本列表相关 ===
+        function renderScriptsList() {
+            const container = document.getElementById('scriptsList');
+            container.innerHTML = `
+                <h2>📝 脚本库</h2>
+                ${scripts.map((s, i) => `
+                    <div class="script-card">
+                        <input type="checkbox" class="script-checkbox" data-index="${i}" onchange="updateSelection()">
+                        <div class="script-info" onclick="showDetail(${i})">
+                            <div class="script-title">#${String(i+1).padStart(3, '0')} ${s.name}</div>
+                            <div class="script-summary">${s.summary}</div>
+                        </div>
+                        <select class="status-select ${s.status === '已完成' ? 'status-done' : 'status-making'}" data-index="${i}" onchange="changeStatus(${i}, this.value)">
+                            <option value="制作中" ${s.status === '制作中' ? 'selected' : ''}>制作中</option>
+                            <option value="已完成" ${s.status === '已完成' ? 'selected' : ''}>已完成</option>
+                        </select>
+                    </div>
+                `).join('')}
+            `;
+            document.getElementById('scriptCount').textContent = scripts.length;
+        }
+
+        function changeStatus(index, newStatus) {
+            scripts[index].status = newStatus;
+            renderScriptsList();
+        }
+
+        function updateSelection() {
+            const checkboxes = document.querySelectorAll('.script-checkbox:checked');
+            const count = checkboxes.length;
+            const actionBar = document.getElementById('actionBar');
+            const countText = document.getElementById('selectedCount');
+
+            if (count > 0) {
+                actionBar.style.display = 'flex';
+                countText.textContent = `已选择 ${count} 个脚本`;
+            } else {
+                actionBar.style.display = 'none';
+            }
+        }
+
+        function deleteSelected() {
+            const checkboxes = document.querySelectorAll('.script-checkbox:checked');
+            const indices = Array.from(checkboxes).map(cb => parseInt(cb.dataset.index)).sort((a,b) => b-a);
+
+            if (confirm(`确定要删除 ${indices.length} 个脚本吗？`)) {
+                indices.forEach(i => scripts.splice(i, 1));
+                renderScriptsList();
+                document.getElementById('actionBar').style.display = 'none';
+            }
+        }
+
+        function deselectAll() {
+            document.querySelectorAll('.script-checkbox').forEach(cb => cb.checked = false);
+            updateSelection();
+        }
+
+        // === 脚本详情相关 ===
+        function showDetail(index) {
+            currentScript = scripts[index];
+            currentScriptIndex = index;
+            const detail = document.getElementById('scriptDetail');
+            const list = document.getElementById('scriptsList');
+            const importSection = document.getElementById('importSection');
+            const actionBar = document.getElementById('actionBar');
+
+            detail.classList.add('active');
+            list.style.display = 'none';
+            importSection.style.display = 'none';
+            actionBar.style.display = 'none';
+
+            document.getElementById('detailTitle').textContent = `#${String(index+1).padStart(3, '0')} ${currentScript.name}`;
+            document.getElementById('detailSummary').textContent = currentScript.summary;
+            document.getElementById('detailStatus').value = currentScript.status;
+
+            renderDistRecords();
+            renderOST();
+        }
+
+        let currentScriptIndex = null;
+
+        function changeDetailStatus(newStatus) {
+            if (currentScriptIndex !== null) {
+                scripts[currentScriptIndex].status = newStatus;
+                renderScriptsList();
+            }
+        }
+
+        function showListView() {
+            document.getElementById('scriptDetail').classList.remove('active');
+            document.getElementById('scriptsList').style.display = 'block';
+            document.getElementById('importSection').style.display = 'block';
+            currentScript = null;
+            currentScriptIndex = null;
+            renderScriptsList();
+        }
+
+        // === 分发记录相关 ===
+        function renderDistRecords() {
+            const container = document.getElementById('distRecordsList');
+            const noRecords = document.getElementById('noDistRecords');
+
+            if (currentScript.dist.length === 0) {
+                container.innerHTML = '';
+                noRecords.style.display = 'block';
+                document.getElementById('distActionBar').classList.remove('visible');
+                return;
+            }
+
+            noRecords.style.display = 'none';
+            container.innerHTML = currentScript.dist.map((d, i) => `
+                <div class="dist-record">
+                    <input type="checkbox" class="dist-checkbox" data-index="${i}" onchange="updateDistSelection()">
+                    <div class="dist-content">
+                        <div class="dist-header">
+                            <span class="dist-creator">${d.creator}</span>
+                            <span class="dist-date">${d.date}</span>
+                        </div>
+                        <div class="dist-platforms">
+                            ${d.tt.views ? `<div class="dist-platform"><span class="platform-tt">TT</span><span class="dist-platform-link"><a href="${d.tt.link || '#'}" target="_blank">📱</a></span><span class="dist-platform-views platform-tt">${d.tt.views}</span></div>` : ''}
+                            ${d.ig.views ? `<div class="dist-platform"><span class="platform-ig">IG</span><span class="dist-platform-link"><a href="${d.ig.link || '#'}" target="_blank">📸</a></span><span class="dist-platform-views platform-ig">${d.ig.views}</span></div>` : ''}
+                            ${d.yt.views ? `<div class="dist-platform"><span class="platform-yt">YT</span><span class="dist-platform-link"><a href="${d.yt.link || '#'}" target="_blank">🎬</a></span><span class="dist-platform-views platform-yt">${d.yt.views}</span></div>` : ''}
+                            ${d.fb.views ? `<div class="dist-platform"><span class="platform-fb">FB</span><span class="dist-platform-link"><a href="${d.fb.link || '#'}" target="_blank">📘</a></span><span class="dist-platform-views platform-fb">${d.fb.views}</span></div>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateDistSelection() {
+            const checkboxes = document.querySelectorAll('.dist-checkbox:checked');
+            const count = checkboxes.length;
+            const actionBar = document.getElementById('distActionBar');
+            const countText = document.getElementById('distSelectedCount');
+
+            if (count > 0) {
+                actionBar.classList.add('visible');
+                countText.textContent = `已选择 ${count} 条`;
+            } else {
+                actionBar.classList.remove('visible');
+            }
+        }
+
+        function deleteSelectedDist() {
+            const checkboxes = document.querySelectorAll('.dist-checkbox:checked');
+            const indices = Array.from(checkboxes).map(cb => parseInt(cb.dataset.index)).sort((a,b) => b-a);
+
+            if (confirm(`确定要删除 ${indices.length} 条分发记录吗？`)) {
+                indices.forEach(i => currentScript.dist.splice(i, 1));
+                renderDistRecords();
+                renderInfluencerTable();
+
+                const totalDist = scripts.reduce((sum, s) => sum + s.dist.length, 0);
+                document.getElementById('distCount').textContent = totalDist;
+            }
+        }
+
+        function deselectAllDist() {
+            document.querySelectorAll('.dist-checkbox').forEach(cb => cb.checked = false);
+            updateDistSelection();
+        }
+
+        // === OST 相关 ===
+        function renderOST() {
+            const container = document.getElementById('ostList');
+            container.innerHTML = currentScript.ost.map((text, i) => `
+                <li class="ost-item">
+                    <input type="checkbox" class="ost-checkbox" data-index="${i}" onchange="updateOSTSelection()">
+                    <span class="ost-text" id="ost-text-${i}">${text}</span>
+                    <div class="ost-actions" id="ost-actions-${i}">
+                        <button class="btn small" onclick="editOST(${i})">编辑</button>
+                    </div>
+                </li>
+            `).join('');
+        }
+
+        function updateOSTSelection() {
+            const checkboxes = document.querySelectorAll('.ost-checkbox:checked');
+            const count = checkboxes.length;
+            const actionBar = document.getElementById('ostActionBar');
+            const countText = document.getElementById('ostSelectedCount');
+
+            if (count > 0) {
+                actionBar.classList.add('visible');
+                countText.textContent = `已选择 ${count} 条`;
+            } else {
+                actionBar.classList.remove('visible');
+            }
+        }
+
+        function addOST() {
+            const input = document.getElementById('ostInput');
+            const text = input.value.trim();
+            if (!text || !currentScript) return;
+
+            currentScript.ost.push(`"${text}"`);
+            renderOST();
+            input.value = '';
+        }
+
+        function editOST(index) {
+            const textSpan = document.getElementById(`ost-text-${index}`);
+            const actionsDiv = document.getElementById(`ost-actions-${index}`);
+            const currentText = currentScript.ost[index];
+
+            textSpan.innerHTML = `<input type="text" class="ost-edit-input" id="ost-edit-input-${index}" value="${currentText.replace(/"/g, '"')}">`;
+            actionsDiv.innerHTML = `
+                <button class="btn small" onclick="saveOST(${index})">保存</button>
+                <button class="btn small secondary" onclick="cancelOST(${index}, ${index})">取消</button>
+            `;
+        }
+
+        function saveOST(index) {
+            const input = document.getElementById(`ost-edit-input-${index}`);
+            const newText = input.value.trim();
+            if (newText) {
+                currentScript.ost[index] = `"${newText}"`;
+            }
+            renderOST();
+        }
+
+        function cancelOST(index) {
+            renderOST();
+        }
+
+        function deleteSelectedOST() {
+            const checkboxes = document.querySelectorAll('.ost-checkbox:checked');
+            const indices = Array.from(checkboxes).map(cb => parseInt(cb.dataset.index)).sort((a,b) => b-a);
+
+            if (confirm(`确定要删除 ${indices.length} 条字幕吗？`)) {
+                indices.forEach(i => currentScript.ost.splice(i, 1));
+                renderOST();
+            }
+        }
+
+        function deselectAllOST() {
+            document.querySelectorAll('.ost-checkbox').forEach(cb => cb.checked = false);
+            updateOSTSelection();
+        }
+
+        // === 添加分发记录 ===
+        document.getElementById('addDistForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (!currentScript) return;
+
+            const dist = {
+                creator: document.getElementById('creatorName').value,
+                tt: { link: document.getElementById('ttLink').value, views: document.getElementById('ttViews').value },
+                ig: { link: document.getElementById('igLink').value, views: document.getElementById('igViews').value },
+                yt: { link: document.getElementById('ytLink').value, views: document.getElementById('ytViews').value },
+                fb: { link: document.getElementById('fbLink').value, views: document.getElementById('fbViews').value },
+                date: new Date().toLocaleDateString('zh-CN').replace(/\//g, '-').slice(-5)
+            };
+
+            currentScript.dist.push(dist);
+            renderDistRecords();
+            renderInfluencerTable();
+            document.getElementById('addDistForm').reset();
+
+            const totalDist = scripts.reduce((sum, s) => sum + s.dist.length, 0);
+            document.getElementById('distCount').textContent = totalDist;
+        });
+
+        // === 导入脚本 ===
+        document.getElementById('importScriptForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('scriptName').value.trim();
+            const summary = document.getElementById('scriptSummary').value.trim();
+            const status = document.getElementById('scriptStatus').value;
+
+            if (!name) return;
+
+            scripts.push({
+                name: name,
+                summary: summary || '暂无摘要',
+                status: status,
+                ost: [],
+                dist: []
+            });
+
+            renderScriptsList();
+            document.getElementById('scriptName').value = '';
+            document.getElementById('scriptSummary').value = '';
+        });
+
+        // 回车添加 OST
+        document.getElementById('ostInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') addOST();
+        });
+
+        // 初始化
+        renderScriptsList();
+        renderInfluencerTable();
+    </script>
+</body>
+</html>
