@@ -388,6 +388,9 @@
             <a href="#" onclick="showListView()">📋 脚本列表</a>
             <a href="#" onclick="showListView()">📈 分发数据</a>
             <a href="#达人库">👥 达人库</a>
+            <a href="#" onclick="exportData()">💾 导出数据</a>
+            <a href="#" onclick="document.getElementById('importFile').click()">📂 导入数据</a>
+            <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(this)">
         </div>
 
         <div class="stats">
@@ -396,7 +399,7 @@
                 <div class="stat-label">脚本总数</div>
             </div>
             <div class="stat-card">
-                <div class="stat-num">5</div>
+                <div class="stat-num" id="influencerCount">5</div>
                 <div class="stat-label">达人总数</div>
             </div>
             <div class="stat-card">
@@ -404,7 +407,7 @@
                 <div class="stat-label">分发次数</div>
             </div>
             <div class="stat-card">
-                <div class="stat-num">125.4K</div>
+                <div class="stat-num" id="totalViews">125.4K</div>
                 <div class="stat-label">总 Views</div>
             </div>
         </div>
@@ -546,6 +549,8 @@
     </div>
 
     <script>
+        const STORAGE_KEY = 'ugcKanbanDataV1';
+
         // 达人备注存储
         let influencerNotes = {};
 
@@ -650,9 +655,10 @@
 
         function saveInfluencerNote(name, note) {
             influencerNotes[name] = note;
+            saveData();
         }
 
-        let scripts = [
+        const defaultScripts = [
             { name: '漱口水测评', summary: '薄荷味漱口水使用体验，推荐语气', status: '制作中', ost: ['"这个漱口水也太清凉了吧！"', '"用完口气清新一整天"'], dist: [
                 { creator: '@小美', tt: {link: '', views: '12K'}, ig: {link: '', views: '8.5K'}, yt: {link: '', views: ''}, fb: {link: '', views: '3.2K'}, date: '06-08' },
                 { creator: '@Lisa', tt: {link: '', views: '8K'}, ig: {link: '', views: '6K'}, yt: {link: '', views: '10K'}, fb: {link: '', views: ''}, date: '06-07' }
@@ -665,7 +671,98 @@
             ]}
         ];
 
+        let scripts = JSON.parse(JSON.stringify(defaultScripts));
         let currentScript = null;
+
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                scripts,
+                influencerNotes
+            }));
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (!saved) return;
+
+            try {
+                const data = JSON.parse(saved);
+                if (Array.isArray(data.scripts)) {
+                    scripts = data.scripts;
+                }
+                if (data.influencerNotes && typeof data.influencerNotes === 'object') {
+                    influencerNotes = data.influencerNotes;
+                }
+            } catch (error) {
+                console.warn('读取本地数据失败，已使用默认数据。', error);
+            }
+        }
+
+        function updateStats() {
+            const influencerStats = getInfluencerStats();
+            const totalDist = scripts.reduce((sum, script) => sum + script.dist.length, 0);
+            const totalViews = scripts.reduce((sum, script) => {
+                return sum + script.dist.reduce((distSum, dist) => {
+                    return distSum
+                        + parseViews(dist.tt.views)
+                        + parseViews(dist.ig.views)
+                        + parseViews(dist.yt.views)
+                        + parseViews(dist.fb.views);
+                }, 0);
+            }, 0);
+
+            document.getElementById('scriptCount').textContent = scripts.length;
+            document.getElementById('influencerCount').textContent = influencerStats.length;
+            document.getElementById('distCount').textContent = totalDist;
+            document.getElementById('totalViews').textContent = formatViews(totalViews);
+        }
+
+        function renderAll() {
+            renderScriptsList();
+            renderInfluencerTable();
+            updateStats();
+        }
+
+        function exportData() {
+            const blob = new Blob([JSON.stringify({ scripts, influencerNotes }, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `ugc-kanban-${new Date().toISOString().slice(0, 10)}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importData(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function() {
+                try {
+                    const data = JSON.parse(reader.result);
+                    if (!Array.isArray(data.scripts)) {
+                        throw new Error('缺少 scripts 数组');
+                    }
+
+                    scripts = data.scripts;
+                    influencerNotes = data.influencerNotes && typeof data.influencerNotes === 'object'
+                        ? data.influencerNotes
+                        : {};
+                    currentScript = null;
+                    currentScriptIndex = null;
+                    saveData();
+                    showListView();
+                    renderAll();
+                    alert('导入成功');
+                } catch (error) {
+                    alert(`导入失败：${error.message}`);
+                } finally {
+                    input.value = '';
+                }
+            };
+            reader.readAsText(file);
+        }
 
         // === 脚本列表相关 ===
         function renderScriptsList() {
@@ -686,11 +783,12 @@
                     </div>
                 `).join('')}
             `;
-            document.getElementById('scriptCount').textContent = scripts.length;
+            updateStats();
         }
 
         function changeStatus(index, newStatus) {
             scripts[index].status = newStatus;
+            saveData();
             renderScriptsList();
         }
 
@@ -714,7 +812,9 @@
 
             if (confirm(`确定要删除 ${indices.length} 个脚本吗？`)) {
                 indices.forEach(i => scripts.splice(i, 1));
+                saveData();
                 renderScriptsList();
+                renderInfluencerTable();
                 document.getElementById('actionBar').style.display = 'none';
             }
         }
@@ -751,6 +851,7 @@
         function changeDetailStatus(newStatus) {
             if (currentScriptIndex !== null) {
                 scripts[currentScriptIndex].status = newStatus;
+                saveData();
                 renderScriptsList();
             }
         }
@@ -816,11 +917,10 @@
 
             if (confirm(`确定要删除 ${indices.length} 条分发记录吗？`)) {
                 indices.forEach(i => currentScript.dist.splice(i, 1));
+                saveData();
                 renderDistRecords();
                 renderInfluencerTable();
-
-                const totalDist = scripts.reduce((sum, s) => sum + s.dist.length, 0);
-                document.getElementById('distCount').textContent = totalDist;
+                updateStats();
             }
         }
 
@@ -863,6 +963,7 @@
             if (!text || !currentScript) return;
 
             currentScript.ost.push(`"${text}"`);
+            saveData();
             renderOST();
             input.value = '';
         }
@@ -884,6 +985,7 @@
             const newText = input.value.trim();
             if (newText) {
                 currentScript.ost[index] = `"${newText}"`;
+                saveData();
             }
             renderOST();
         }
@@ -898,6 +1000,7 @@
 
             if (confirm(`确定要删除 ${indices.length} 条字幕吗？`)) {
                 indices.forEach(i => currentScript.ost.splice(i, 1));
+                saveData();
                 renderOST();
             }
         }
@@ -922,12 +1025,11 @@
             };
 
             currentScript.dist.push(dist);
+            saveData();
             renderDistRecords();
             renderInfluencerTable();
             document.getElementById('addDistForm').reset();
-
-            const totalDist = scripts.reduce((sum, s) => sum + s.dist.length, 0);
-            document.getElementById('distCount').textContent = totalDist;
+            updateStats();
         });
 
         // === 导入脚本 ===
@@ -947,6 +1049,7 @@
                 dist: []
             });
 
+            saveData();
             renderScriptsList();
             document.getElementById('scriptName').value = '';
             document.getElementById('scriptSummary').value = '';
@@ -958,8 +1061,8 @@
         });
 
         // 初始化
-        renderScriptsList();
-        renderInfluencerTable();
+        loadData();
+        renderAll();
     </script>
 </body>
 </html>
